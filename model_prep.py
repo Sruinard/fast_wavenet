@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder, PowerTransformer, MinMaxScaler, QuantileTransformer
 import tqdm
-import tensorflow as tf
-import numpy as np
+
 
 
 
@@ -46,7 +45,7 @@ class Model(object):
         for block in range(n_blocks):
             for i in range(n_layers):
                 rate = 2 ** i
-                name = f'B{block}-L{i}'
+                name = 'B{}-L{}'.format(block,i)
                 if condition_flag:
                     h = dilated_conv1d(inputs=h, out_channels=self.n_channels_per_layer, name=name,
                                        inputs_condition=h_c, rate=rate)
@@ -61,14 +60,12 @@ class Model(object):
                                                 n_blocks=self.n_blocks, n_layers=self.n_layers)
         # create_loss_per_feature
         loss_per_feature_dict = compute_loss_per_feature(predictors_dict=predictors_dict,
-                                                         target_dict=self.dict_with_targets, n_blocks=self.n_blocks,
-                                                         n_layers=self.n_layers)
+                                                         target_dict=self.dict_with_targets)
 
         # selects all losses and moves them into a list
         loss_scalar = tf.reduce_mean(list(loss_per_feature_dict.values()))
 
-        accuracy_dict = create_accuracy_dict(dict_with_targets=self.dict_with_targets, predictors_dict=predictors_dict,
-                                             n_blocks=self.n_blocks, n_layers=self.n_layers)
+        accuracy_dict = create_accuracy_dict(dict_with_targets=self.dict_with_targets, predictors_dict=predictors_dict)
 
         optimizer = tf.train.AdamOptimizer(1e-3)
         gradients, variables = zip(*optimizer.compute_gradients(loss_scalar))
@@ -109,7 +106,7 @@ class Model(object):
             losses.append(cost)
 
             if cost < best_loss:
-                tqdm.tqdm.write(f'iteration:{epoch} -------- loss:{cost} --------- best_loss:{best_loss}')
+                tqdm.tqdm.write('iteration:{} -------- loss:{} --------- best_loss:{}'.format(epoch, cost, best_loss))
                 self.saver.save(self.sess, self.logdir + 'B{}L{}/'.format(self.n_blocks, self.n_layers) + 'model.ckpt')
                 best_loss = cost
 
