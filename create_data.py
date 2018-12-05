@@ -7,8 +7,8 @@ import tqdm
 from sklearn.model_selection import train_test_split
 import pickle
 
-from model_prep import *
-from preprocessing import *
+from files.model import *
+from files.preprocessing import *
 
 #
 all_files =['/Users/stefruinard/Documents/ML6/DataECC/exp3_013.csv','/Users/stefruinard/Documents/ML6/DataECC/exp3_006.csv', '/Users/stefruinard/Documents/ML6/DataECC/exp3_009.csv']#, '/Users/stefruinard/Documents/ML6/DataECC/exp3_007.csv']#,'/Users/stefruinard/Documents/ML6/DataECC/exp3_010.csv','/Users/stefruinard/Documents/ML6/DataECC/exp3_007.csv','/Users/stefruinard/Documents/ML6/DataECC/exp3_008.csv']#,'/Users/stefruinard/Documents/ML6/DataECC/exp3_009.csv']
@@ -18,11 +18,12 @@ df = df[df.encoder_rpm>-2.5]
 print('--- data loaded ---')
 
 n_blocks=3
-n_layers=9
-n_time_steps = 2**11
-test_df = df
+n_layers=7
+n_time_steps = 2**9
 
-test_df = remove_cols(test_df)
+list_with_bins_per_feature = [20,150,150,150,150,150,150]
+
+test_df = remove_cols(df)
 
 chunked_data = data_chunk(test_df, n_time_steps)
 
@@ -37,7 +38,6 @@ for i in range(3):
 
             df_test_transformed = transformer_transform(df_test_to_be_transformed, transformer_dict=transformer_dict)
 
-            list_with_bins_per_feature = [20, 256, 256, 256, 256, 256, 256]
 
             # use this for one_hot_fitting
             binned_data = data_to_bins(df_test_transformed, created_bins=created_bins_test)
@@ -73,7 +73,6 @@ for i in range(3):
 
         df_test_transformed = transformer_transform(df_test_to_be_transformed, transformer_dict=transformer_dict)
 
-        list_with_bins_per_feature = [20,256,256,256,256,256,256]
 
         bins_per_feature_test = bins_per_feature(df_test_transformed, list_with_bins_per_feature)
 
@@ -115,7 +114,6 @@ for i in range(3):
 
         df_test_transformed = transformer_transform(df_test_to_be_transformed, transformer_dict=transformer_dict)
 
-        list_with_bins_per_feature = [20, 256, 256, 256, 256, 256, 256]
 
 
 
@@ -151,7 +149,7 @@ for i in range(3):
 
         df_test_transformed = transformer_transform(df_test_to_be_transformed, transformer_dict=transformer_dict)
 
-        list_with_bins_per_feature = [20, 256, 256, 256, 256, 256, 256]
+        list_with_bins_per_feature = [20,150,150,150,150,150,150]
 
         # use this for one_hot_fitting
         binned_data = data_to_bins(df_test_transformed, created_bins=created_bins_test)

@@ -73,7 +73,7 @@ def create_filter(filter_width, in_channels, out_channels, name=""):
                            shape=(filter_width, in_channels, out_channels))
 
 def conv1d(inputs, out_channels, filter_width=2, stride=1,
-           padding='VALID', activation=tf.nn.leaky_relu, inputs_condition=None, rate=None):
+           padding='VALID', activation=tf.nn.leaky_relu, inputs_condition=None, rate=None, bias=False):
     shape = inputs.get_shape().as_list()
     in_channels = shape[-1]
 
@@ -93,6 +93,14 @@ def conv1d(inputs, out_channels, filter_width=2, stride=1,
         outputs_condition = tf.nn.conv1d(inputs_condition_, conv_filter_condition, stride=stride, padding=padding)
 
         outputs = tf.reduce_sum([outputs, outputs_condition], axis=0)
+
+    if bias:
+        b_init = tf.constant_initializer(0.0)
+        b = tf.get_variable(name='b',
+                            shape=(out_channels,),
+                            initializer=b_init)
+
+        outputs = outputs + tf.expand_dims(tf.expand_dims(b, 0), 0)
 
     if activation:
         outputs = activation(outputs)
@@ -128,14 +136,14 @@ def create_target_placeholders(classes_per_feature):
             target_placeholder_dict['target_feature_{}'.format(i)] = tf.stop_gradient(tf.placeholder(dtype=tf.float32, shape=[None,classes]))
     return target_placeholder_dict
 
-def create_predictor_dict(inputs, n_layers,n_blocks, classes_per_feature,activation=None, filter_width=1):
+def create_predictor_dict(inputs, n_layers,n_blocks, classes_per_feature,activation=None, filter_width=1, bias=True):
     output_dict = OrderedDict()
     for i, dim in enumerate(classes_per_feature):
-        with tf.variable_scope('feature_predictor_{}'.format(i)):
-            output_dict['output_for_feature_{}'.format(i)] = conv1d(inputs=inputs,out_channels=dim, activation=activation,filter_width=filter_width)[:,(2**n_layers)*n_blocks:,:] #USE ONLY THE PREDICTIONS With no zero padding to perform gradient descent on
+        with tf.variable_scope('feature_predlsictor_{}'.format(i)):
+            output_dict['output_for_feature_{}'.format(i)] = conv1d(inputs=inputs,out_channels=dim, activation=activation,filter_width=filter_width, bias=bias)[:,(2**n_layers)*n_blocks:,:] #USE ONLY THE PREDICTIONS With no zero padding to perform gradient descent on
     return output_dict
 
-def create_accuracy_dict(predictors_dict, dict_with_targets, list_with_bins_per_feature=[20, 256, 256, 256, 256, 256, 256]):
+def create_accuracy_dict(predictors_dict, dict_with_targets, list_with_bins_per_feature=[20,150,150,150,150,150,150]):
     dict_with_acc = OrderedDict()
 
     for i,j in enumerate(predictors_dict.keys()):
@@ -146,7 +154,7 @@ def create_accuracy_dict(predictors_dict, dict_with_targets, list_with_bins_per_
         dict_with_acc['acc_feature_{}'.format(i)] = accuracy
     return dict_with_acc
 
-def compute_loss_per_feature(predictors_dict, target_dict, list_with_bins_per_feature=[20, 256, 256, 256, 256, 256, 256]):
+def compute_loss_per_feature(predictors_dict, target_dict, list_with_bins_per_feature=[20,150,150,150,150,150,150]):
     loss_per_feature = OrderedDict()
     for i in range(len(predictors_dict)):
         labels = target_dict['target_feature_{}'.format(i)]                 #   [(2**n_layers)*n_blocks:] #USE ONLY THE PREDICTIONS With no zero padding to perform gradient descent on
@@ -245,7 +253,6 @@ def create_training_batch(batch_size, n_time_steps, directory):
 
     """
     Args:
-        data_size: 2**i, must be greater than 'n_time_steps' in model
         directory: the folder containing the folders: 'inputs_engine', 'inputs_condition', 'targets'
     """
     #   random_starting_integer = np.shape(df_transformed)

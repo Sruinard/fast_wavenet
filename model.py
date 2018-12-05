@@ -95,22 +95,29 @@ class Model(object):
                             input_placeholder=self.inputs_engine, input_placeholder_cond=self.inputs_condition,
                             input_placeholder_targets_dict=self.dict_with_targets)
         cost, opt = self.sess.run([self.loss_scalar, self.minimize], feed_dict=feed_dict)
-        return cost, feed_dict
+        return cost, opt
 
-    def train(self, inputs_engine, inputs_condition, targets, n_steps, best_loss,epoch):
-        losses = []
-        i = 0
-        for step in tqdm.tqdm(range(n_steps)):
-            i += 1
-            cost, feed_dict = self._train(inputs_engine, inputs_condition, targets)
-            losses.append(cost)
+    def train(self, inputs_engine, inputs_condition, targets):
+        cost, opt = self._train(inputs_engine, inputs_condition, targets)
+        return cost, opt
 
-            if cost < best_loss:
-                tqdm.tqdm.write('iteration:{} -------- loss:{} --------- best_loss:{}'.format(epoch, cost, best_loss))
-                self.saver.save(self.sess, self.logdir + 'B{}L{}/'.format(self.n_blocks, self.n_layers) + 'model.ckpt')
-                best_loss = cost
+    def eval(self, inputs_engine, inputs_condition, targets, best_loss, iteration):
+        feed_dict = to_dict(inputs_engine=inputs_engine,
+                            inputs_condition=inputs_condition, targets=targets,
+                            input_placeholder=self.inputs_engine, input_placeholder_cond=self.inputs_condition,
+                            input_placeholder_targets_dict=self.dict_with_targets)
+        cost = self.sess.run(self.loss_scalar, feed_dict=feed_dict)
 
-        return losses, best_loss, feed_dict
+        summary_str = self.summary.eval(feed_dict=feed_dict)
+        self.file_writer.add_summary(summary_str, iteration)
+
+        if cost < best_loss:
+            tqdm.tqdm.write('iteration:{} -------- loss changed {} -----> {}'.format(iteration, best_loss, cost ))
+            self.saver.save(self.sess, self.logdir + 'B{}L{}/'.format(self.n_blocks, self.n_layers) + 'model.ckpt')
+            best_loss = cost
+
+        return best_loss
+
 
     def metrics(self):
         with tf.name_scope('scalars'):
@@ -133,4 +140,9 @@ class Model(object):
         file_writer = tf.summary.FileWriter(
             self.logdir + 'Tensorboard/' + 'B{}L{}/'.format(self.n_blocks, self.n_layers), tf.get_default_graph())
         return summary, file_writer
+
+
+
+
+
 

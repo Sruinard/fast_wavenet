@@ -1,0 +1,1 @@
+gcloud ml-engine jobs submit training fw --job-dir gs://fastwavenet/MLengine/FastWavenet/output/ --module-name files.main --region europe-west1 --package-path files/ -- --logdir=/Users/stefruinard/Desktop/MLengine/FastWavenet/
