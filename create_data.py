@@ -31,38 +31,7 @@ tr,val,te = split_train_validation_test(chunked_data)
 
 for i in range(3):
     if i == 0:
-        if i == 1:
-            concatenated_df = concat_df(val)
 
-            df_test_to_be_transformed, df_switches = separate_switches(concatenated_df)
-
-            df_test_transformed = transformer_transform(df_test_to_be_transformed, transformer_dict=transformer_dict)
-
-
-            # use this for one_hot_fitting
-            binned_data = data_to_bins(df_test_transformed, created_bins=created_bins_test)
-
-            # use this data for creating_chunks for one_hot
-            data_one_hot_full_batch_including_zero_targets = data_chunk(binned_data, n_time_steps=n_time_steps)
-
-            # use only the part with no padded zero for targets labels
-            start_index_without_padded_zeros = 2 ** n_layers * n_blocks + 1  # (2**n_layers*n_blocks+1, add 1 since we are selecting the target data
-            data_ready_for_one_hot = [i[start_index_without_padded_zeros:] for i in
-                                      data_one_hot_full_batch_including_zero_targets]
-
-            # data ready to save as input_condition
-            data_switch_test = data_chunk(df_switches, n_time_steps=n_time_steps)
-
-            # fitted on entire training_data
-
-            inputs_for_saving = create_inputs_engine_and_inputs_condition(
-                data_one_hot_full_batch_including_zero_targets,
-                data_switch_test)
-
-            targets_for_saving = create_targets_ready_for_saving(data_ready_for_one_hot, fitters_one_hot_test)
-
-            save_batches(inputs_for_saving, targets_for_saving,
-                         directory='/Users/stefruinard/Desktop/FastWavenet/validation_data/')
         concatenated_df = concat_df(tr)
 
         df_test_to_be_transformed, df_switches = separate_switches(concatenated_df)
