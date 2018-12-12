@@ -63,18 +63,22 @@ class Model(object):
                                                          target_dict=self.dict_with_targets)
 
         # selects all losses and moves them into a list
-        loss_scalar = tf.reduce_mean(list(loss_per_feature_dict.values()))
+        #train_only last two layers of block 3 and output_layers
+        var_list = tf.trainable_variables()[20:]
+        loss_scalar = tf.reduce_sum(list(loss_per_feature_dict.values()))
+
+
 
         accuracy_dict = create_accuracy_dict(dict_with_targets=self.dict_with_targets, predictors_dict=predictors_dict)
 
         optimizer = tf.train.AdamOptimizer(1e-3)
-        gradients, variables = zip(*optimizer.compute_gradients(loss_scalar))
+        gradients, variables = zip(*optimizer.compute_gradients(loss_scalar, var_list = var_list))    #train_only last two layers of block 3 and output_layers
         gradients, _ = tf.clip_by_global_norm(gradients, 5.0)
         optimize = optimizer.apply_gradients(zip(gradients, variables))
 
         # specify_minimizer
-        #         optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
-        #         minimize = optimizer.minimize(loss_scalar)
+        # optimizer = tf.train.AdamOptimizer(1e-3)
+        # optimize = optimizer.minimize(loss_scalar)
 
         self.inputs_engine = inputs_engine
         self.inputs_condition = inputs_condition
@@ -113,8 +117,9 @@ class Model(object):
 
         if cost < best_loss:
             tqdm.tqdm.write('iteration:{} -------- loss changed {} -----> {}'.format(iteration, best_loss, cost ))
-            self.saver.save(self.sess, self.logdir + 'B{}L{}/'.format(self.n_blocks, self.n_layers) + 'model.ckpt')
             best_loss = cost
+            self.saver.save(self.sess, self.logdir + 'B{}L{}/'.format(self.n_blocks, self.n_layers) + 'model.ckpt')
+        self.saver.save(self.sess, self.logdir + 'B{}L{}/'.format(self.n_blocks, self.n_layers) + 'iteration_{}_loss_{}/'.format(iteration,cost) + 'model.ckpt')
 
         return best_loss
 

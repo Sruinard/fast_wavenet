@@ -139,7 +139,7 @@ def create_target_placeholders(classes_per_feature):
 def create_predictor_dict(inputs, n_layers,n_blocks, classes_per_feature,activation=None, filter_width=1, bias=True):
     output_dict = OrderedDict()
     for i, dim in enumerate(classes_per_feature):
-        with tf.variable_scope('feature_predlsictor_{}'.format(i)):
+        with tf.variable_scope('feature_predictor_{}'.format(i)):
             output_dict['output_for_feature_{}'.format(i)] = conv1d(inputs=inputs,out_channels=dim, activation=activation,filter_width=filter_width, bias=bias)[:,(2**n_layers)*n_blocks:,:] #USE ONLY THE PREDICTIONS With no zero padding to perform gradient descent on
     return output_dict
 
@@ -157,9 +157,9 @@ def create_accuracy_dict(predictors_dict, dict_with_targets, list_with_bins_per_
 def compute_loss_per_feature(predictors_dict, target_dict, list_with_bins_per_feature=[20,150,150,150,150,150,150]):
     loss_per_feature = OrderedDict()
     for i in range(len(predictors_dict)):
-        labels = target_dict['target_feature_{}'.format(i)]                 #   [(2**n_layers)*n_blocks:] #USE ONLY THE PREDICTIONS With no zero padding to perform gradient descent on
-        logits = tf.reshape(predictors_dict['output_for_feature_{}'.format(i)], [-1,list_with_bins_per_feature[i]])
-        loss_per_feature['loss_feature_{}'.format(i)] = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=labels, logits=logits))
+        labels = target_dict['target_feature_{}'.format(i)]               #   [(2**n_layers)*n_blocks:] #USE ONLY THE PREDICTIONS With no zero padding to perform gradient descent on
+        logits = tf.nn.softmax(tf.reshape(predictors_dict['output_for_feature_{}'.format(i)], [-1,list_with_bins_per_feature[i]]),axis=1)
+        loss_per_feature['loss_feature_{}'.format(i)] = tf.losses.mean_squared_error(labels=labels, predictions=logits)
     return loss_per_feature
 
 def merge_dicts(dict1, dict2):
