@@ -18,7 +18,7 @@ class Model(object):
 
     def __init__(self, sess, n_blocks, n_layers,
                  n_time_steps, n_input_features, classes_per_feature,
-                 n_input_features_condition, n_channels_per_layer, logdir='/Users/stefruinard/Desktop/FastWavenet/',
+                 n_input_features_condition, n_channels_per_layer, dense_flag, logdir='/Users/stefruinard/Desktop/FastWavenet/',
                  condition_flag=True):
 
         self.n_blocks = n_blocks
@@ -30,9 +30,17 @@ class Model(object):
         self.n_channels_per_layer = n_channels_per_layer
         self.logdir = logdir
         self.condition_flag = condition_flag
+        self.dense_flag = dense_flag
+        self.receptive_field = 2**n_layers*n_blocks
 
-        inputs_engine = tf.placeholder(dtype=tf.float32, shape=[None, n_time_steps, n_input_features])
-        inputs_condition = tf.placeholder(dtype=tf.float32, shape=[None, n_time_steps, n_input_features_condition])
+        #IF DENSE
+        if self.dense_flag == True:
+            inputs_engine = tf.placeholder(dtype=tf.float32, shape=[None, self.receptive_field, n_input_features])
+            inputs_condition = tf.placeholder(dtype=tf.float32, shape=[None, self.receptive_field, n_input_features_condition])
+
+        if self.dense_flag == False:
+            inputs_engine = tf.placeholder(dtype=tf.float32, shape=[None, n_time_steps, n_input_features])
+            inputs_condition = tf.placeholder(dtype=tf.float32, shape=[None, n_time_steps, n_input_features_condition])
 
         # can be accessed with dict_with_targets['target_feature_{i}']
         self.dict_with_targets = create_target_placeholders(classes_per_feature)
@@ -57,7 +65,7 @@ class Model(object):
 
         # creates a predictor for each feature with the feature's number of classes
         predictors_dict = create_predictor_dict(inputs=h, classes_per_feature=self.classes_per_feature,
-                                                n_blocks=self.n_blocks, n_layers=self.n_layers)
+                                                n_blocks=self.n_blocks, n_layers=self.n_layers, dense_flag=self.dense_flag)
         # create_loss_per_feature
         loss_per_feature_dict = compute_loss_per_feature(predictors_dict=predictors_dict,
                                                          target_dict=self.dict_with_targets)

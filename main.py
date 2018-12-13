@@ -78,13 +78,14 @@ if __name__ == '__main__':
     tf.reset_default_graph()
 
 
-    batch_size_training = 8
-
+    batch_size_training = 8 #since alterations happen within the batch, the true batch_size becomes: batch_size_training*(n_time_steps - n**n_layers*n_blocks)
+    batch_size_val = 12 #since alterations happen within the batch, the true batch_size becomes: batch_size_training*(n_time_steps - n**n_layers*n_blocks)
+    dense_flag = True
     with tf.Session() as sess:
         model = Model(sess, n_blocks=n_blocks, n_layers=n_layers, condition_flag=True,
                       classes_per_feature=n_classes_per_feature, n_input_features=6, n_input_features_condition=4,
-                      n_time_steps=n_time_steps, n_channels_per_layer=n_channels_per_layer, logdir=logdir)  #logdir='/Users/stefruinard/Desktop/FastWavenet/'
-        #model.saver.restore(sess, tf.train.latest_checkpoint('/Users/stefruinard/Desktop/computed_model/B{}L{}/'.format(model.n_blocks, model.n_layers)))
+                      n_time_steps=n_time_steps, n_channels_per_layer=n_channels_per_layer, logdir=logdir, dense_flag=dense_flag)  #logdir='/Users/stefruinard/Desktop/FastWavenet/'
+        #model.saver.restore(sess, tf.train.latest_checkpoint('/Users/stefruinard/Desktop/small_wavenet/B{}L{}/'.format(model.n_blocks, model.n_layers)))
         print("------ model created ------")
 
 
@@ -109,12 +110,12 @@ if __name__ == '__main__':
         for iteration in tqdm.tqdm(range(start_iteration,n_training_steps)):
             save_data(directory=logdir+'B{}L{}/'.format(model.n_blocks,model.n_layers), filename='iteration',my_list=iteration)
 
-            inputs_engine, inputs_condition, targets = create_training_batch(batch_size=batch_size_training, n_time_steps=n_time_steps, directory=directory_training_data) #directory='/Users/stefruinard/Desktop/FastWavenet/training_data/'
+            inputs_engine, inputs_condition, targets = create_training_batch(batch_size=batch_size_training, n_time_steps=n_time_steps, directory=directory_training_data, n_layers=n_layers, n_blocks=n_blocks, dense_flag=model.dense_flag) #directory='/Users/stefruinard/Desktop/FastWavenet/training_data/'
             cost, opt = model.train(inputs_engine=inputs_engine, inputs_condition=inputs_condition,targets=targets)
 
             #save to tensorboard
             if iteration % 100 == 0:
-                inputs_engine, inputs_condition, targets = create_training_batch(batch_size=4, n_time_steps=n_time_steps, directory=directory_val_data) #directory='/Users/stefruinard/Desktop/FastWavenet/validation_data/'
+                inputs_engine, inputs_condition, targets = create_training_batch(batch_size=batch_size_val, n_time_steps=n_time_steps, directory=directory_val_data, n_layers=n_layers, n_blocks=n_blocks, dense_flag=model.dense_flag) #directory='/Users/stefruinard/Desktop/FastWavenet/validation_data/'
                 best_loss = model.eval(inputs_engine=inputs_engine, inputs_condition=inputs_condition,targets=targets, best_loss=best_loss, iteration=iteration)
                 my_losses_list.append(best_loss)
                 save_data(directory=logdir+'best_loss_list/', filename='best_loss', my_list=my_losses_list)

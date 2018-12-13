@@ -137,11 +137,24 @@ def create_target_placeholders(classes_per_feature):
             target_placeholder_dict['target_feature_{}'.format(i)] = tf.stop_gradient(tf.placeholder(dtype=tf.float32, shape=[None,classes]))
     return target_placeholder_dict
 
-def create_predictor_dict(inputs, n_layers,n_blocks, classes_per_feature,activation=None, filter_width=1, bias=True):
+def create_predictor_dict(inputs, n_layers,n_blocks, dense_flag, classes_per_feature,activation=None, filter_width=1, bias=True,):
     output_dict = OrderedDict()
-    for i, dim in enumerate(classes_per_feature):
-        with tf.variable_scope('feature_predictor_{}'.format(i)):
-            output_dict['output_for_feature_{}'.format(i)] = conv1d(inputs=inputs,out_channels=dim, activation=activation,filter_width=filter_width, bias=bias)[:,(2**n_layers)*n_blocks:,:] #USE ONLY THE PREDICTIONS With no zero padding to perform gradient descent on
+
+
+    #IF you change this back to CONV1D remember to also change back the inputs!!
+    if dense_flag == True:
+        flat_layer = tf.layers.flatten(inputs)
+        for i, dim in enumerate(classes_per_feature):
+            with tf.variable_scope('feature_predictor_{}'.format(i)):
+                dense_layer_1 = tf.layers.dense(inputs=flat_layer, activation=tf.nn.leaky_relu, units=6, name='dense_layer_1')
+                output_dict['output_for_feature_{}'.format(i)] = tf.layers.dense(inputs=dense_layer_1, activation=activation, units=dim, name='predictor_layer')
+
+    #Use of final layer = conv1D
+    if dense_flag == False:
+        for i, dim in enumerate(classes_per_feature):
+            with tf.variable_scope('feature_predictor_{}'.format(i)):
+                output_dict['output_for_feature_{}'.format(i)] = conv1d(inputs=inputs,out_channels=dim, activation=activation,filter_width=filter_width, bias=bias)[:,(2**n_layers)*n_blocks:,:] #USE ONLY THE PREDICTIONS With no zero padding to perform gradient descent on
+
     return output_dict
 
 def create_accuracy_dict(predictors_dict, dict_with_targets, list_with_bins_per_feature=[20,150,150,150,150,150,150]):
@@ -168,7 +181,7 @@ def compute_loss_per_feature(predictors_dict, target_dict, list_with_bins_per_fe
         #Take the mean of the resulting vector and return this scalar:
 
 
-        loss_per_feature['loss_feature_{}'.format(i)] = tf.losses.mean_squared_error(labels=labels, predictions=logits)
+        loss_per_feature['loss_feature_{}'.format(i)] = tf.losses.mean_squared_error(labels=labels, predictions=logits) * (tf.cast(tf.constant(list_with_bins_per_feature[i])/tf.reduce_sum(tf.constant(list_with_bins_per_feature)),dtype=tf.float32))
     return loss_per_feature
 
 def merge_dicts(dict1, dict2):
@@ -254,7 +267,25 @@ def onehottransformer(df, onehotfitter):
         transformed_data[i] = onehotfitter[i].transform(df.loc[:,i].values.reshape(-1,1))
     return transformed_data
 
-def create_training_batch(batch_size, n_time_steps, directory):
+
+def reshape_for_dense(inputs, n_layers, n_blocks, n_features):
+    full_batch = []
+    receptive_field = 2 ** n_layers * n_blocks
+    n_batches = np.shape(inputs)[0]
+    for i in range(n_batches):
+        temp_inputs = inputs[i]
+        new_inputs = []
+
+        while (np.shape(temp_inputs)[0] >= receptive_field):
+            new_inputs.append(temp_inputs[:receptive_field])
+            temp_inputs = temp_inputs[1:, :]
+        new_inputs = new_inputs[1:]
+        new_inputs = np.reshape(new_inputs, newshape=(-1, receptive_field, n_features))
+        full_batch.append(new_inputs)
+    return np.reshape(full_batch, newshape=(-1, receptive_field, n_features))
+
+
+def create_training_batch(batch_size, n_time_steps, directory, dense_flag, n_layers=None, n_blocks=None):
     # NOTE! inputs engine does not include 'sensor_torque'!
 
     # pd.dataframe --> [:127] is inclusive
@@ -265,7 +296,6 @@ def create_training_batch(batch_size, n_time_steps, directory):
         directory: the folder containing the folders: 'inputs_engine', 'inputs_condition', 'targets'
     """
     #   random_starting_integer = np.shape(df_transformed)
-
 
 
     max_int = len(os.listdir(directory+'inputs_engine/'))
@@ -293,6 +323,10 @@ def create_training_batch(batch_size, n_time_steps, directory):
     inputs_engine = (inputs_engine-0)/[19,149,149,149,149,149]
     inputs_condition = (inputs_condition - 0) / [1, 1, 1, 149]
     batch_targets = [gaussian_filter1d(target,sigma=0.5) for target in batch_targets]
+
+    if dense_flag == True:
+        inputs_engine = reshape_for_dense(inputs_engine, n_layers=n_layers, n_blocks=n_blocks, n_features=6)
+        inputs_condition = reshape_for_dense(inputs_condition, n_layers=n_layers, n_blocks=n_blocks, n_features=4)
 
     return inputs_engine, inputs_condition, batch_targets
 
