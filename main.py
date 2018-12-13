@@ -23,7 +23,7 @@ if __name__ == '__main__':
     PARSER.add_argument(
         '--n-time-steps',
         help='Number of historical data points, depends on n_blocks and n_layers',
-        default=2**9,
+        default=2**5,
         type=int
     )
     PARSER.add_argument(
@@ -78,13 +78,13 @@ if __name__ == '__main__':
     tf.reset_default_graph()
 
 
-    batch_size_training = 64
+    batch_size_training = 8
 
     with tf.Session() as sess:
         model = Model(sess, n_blocks=n_blocks, n_layers=n_layers, condition_flag=True,
                       classes_per_feature=n_classes_per_feature, n_input_features=6, n_input_features_condition=4,
                       n_time_steps=n_time_steps, n_channels_per_layer=n_channels_per_layer, logdir=logdir)  #logdir='/Users/stefruinard/Desktop/FastWavenet/'
-        model.saver.restore(sess, tf.train.latest_checkpoint('/Users/stefruinard/Desktop/computed_model/B{}L{}/'.format(model.n_blocks, model.n_layers)))
+        #model.saver.restore(sess, tf.train.latest_checkpoint('/Users/stefruinard/Desktop/computed_model/B{}L{}/'.format(model.n_blocks, model.n_layers)))
         print("------ model created ------")
 
 

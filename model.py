@@ -64,15 +64,15 @@ class Model(object):
 
         # selects all losses and moves them into a list
         #train_only last two layers of block 3 and output_layers
-        var_list = tf.trainable_variables()[20:]
+        #var_list = tf.trainable_variables()[20:]
         loss_scalar = tf.reduce_sum(list(loss_per_feature_dict.values()))
 
 
 
         accuracy_dict = create_accuracy_dict(dict_with_targets=self.dict_with_targets, predictors_dict=predictors_dict)
 
-        optimizer = tf.train.AdamOptimizer(1e-3)
-        gradients, variables = zip(*optimizer.compute_gradients(loss_scalar, var_list = var_list))    #train_only last two layers of block 3 and output_layers
+        optimizer = tf.train.AdamOptimizer(1e-5)                                #try different learning rates
+        gradients, variables = zip(*optimizer.compute_gradients(loss_scalar))    #train_only last two layers of block 3 and output_layers --> , var_list = var_list
         gradients, _ = tf.clip_by_global_norm(gradients, 5.0)
         optimize = optimizer.apply_gradients(zip(gradients, variables))
 

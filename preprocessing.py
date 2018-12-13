@@ -8,6 +8,7 @@ import os
 from sklearn.model_selection import train_test_split
 import pickle
 from collections import OrderedDict
+from scipy.ndimage.filters import gaussian_filter1d
 
 def power_of_two(x):
     x = int(x)
@@ -159,6 +160,14 @@ def compute_loss_per_feature(predictors_dict, target_dict, list_with_bins_per_fe
     for i in range(len(predictors_dict)):
         labels = target_dict['target_feature_{}'.format(i)]               #   [(2**n_layers)*n_blocks:] #USE ONLY THE PREDICTIONS With no zero padding to perform gradient descent on
         logits = tf.nn.softmax(tf.reshape(predictors_dict['output_for_feature_{}'.format(i)], [-1,list_with_bins_per_feature[i]]),axis=1)
+        #change loss per feature
+        #Smooth the ground truth label over multiple bins with gaussian kernel:
+
+        #Do element wise product of smoothed label and logits:
+
+        #Take the mean of the resulting vector and return this scalar:
+
+
         loss_per_feature['loss_feature_{}'.format(i)] = tf.losses.mean_squared_error(labels=labels, predictions=logits)
     return loss_per_feature
 
@@ -281,6 +290,9 @@ def create_training_batch(batch_size, n_time_steps, directory):
     inputs_engine = batch_input_engine.values.reshape(-1, n_time_steps, 6)
     inputs_condition = batch_input_condition.values.reshape(-1, n_time_steps, 4)
 
+    inputs_engine = (inputs_engine-0)/[19,149,149,149,149,149]
+    inputs_condition = (inputs_condition - 0) / [1, 1, 1, 149]
+    batch_targets = [gaussian_filter1d(target,sigma=0.5) for target in batch_targets]
 
     return inputs_engine, inputs_condition, batch_targets
 
