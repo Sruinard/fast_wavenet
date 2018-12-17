@@ -146,8 +146,9 @@ def create_predictor_dict(inputs, n_layers,n_blocks, dense_flag, classes_per_fea
         flat_layer = tf.layers.flatten(inputs)
         for i, dim in enumerate(classes_per_feature):
             with tf.variable_scope('feature_predictor_{}'.format(i)):
-                dense_layer_1 = tf.layers.dense(inputs=flat_layer, activation=tf.nn.leaky_relu, units=6, name='dense_layer_1')
-                output_dict['output_for_feature_{}'.format(i)] = tf.layers.dense(inputs=dense_layer_1, activation=activation, units=dim, name='predictor_layer')
+                dense_layer_1 = tf.layers.dense(inputs=flat_layer, activation=tf.nn.leaky_relu, units=32, name='dense_layer_1')
+                dense_layer_2 = tf.layers.dense(inputs=flat_layer, activation=tf.nn.leaky_relu, units=16, name='dense_layer_2')
+                output_dict['output_for_feature_{}'.format(i)] = tf.layers.dense(inputs=dense_layer_2, activation=activation, units=dim, name='predictor_layer')
 
     #Use of final layer = conv1D
     if dense_flag == False:

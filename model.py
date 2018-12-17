@@ -68,7 +68,7 @@ class Model(object):
                                                 n_blocks=self.n_blocks, n_layers=self.n_layers, dense_flag=self.dense_flag)
         # create_loss_per_feature
         loss_per_feature_dict = compute_loss_per_feature(predictors_dict=predictors_dict,
-                                                         target_dict=self.dict_with_targets)
+                                                         target_dict=self.dict_with_targets, list_with_bins_per_feature=self.classes_per_feature)
 
         # selects all losses and moves them into a list
         #train_only last two layers of block 3 and output_layers
@@ -77,7 +77,7 @@ class Model(object):
 
 
 
-        accuracy_dict = create_accuracy_dict(dict_with_targets=self.dict_with_targets, predictors_dict=predictors_dict)
+        accuracy_dict = create_accuracy_dict(dict_with_targets=self.dict_with_targets, predictors_dict=predictors_dict, list_with_bins_per_feature=self.classes_per_feature)
 
         optimizer = tf.train.AdamOptimizer(1e-5)                                #try different learning rates
         gradients, variables = zip(*optimizer.compute_gradients(loss_scalar))    #train_only last two layers of block 3 and output_layers --> , var_list = var_list

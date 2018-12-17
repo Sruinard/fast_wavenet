@@ -85,7 +85,7 @@ if __name__ == '__main__':
         model = Model(sess, n_blocks=n_blocks, n_layers=n_layers, condition_flag=True,
                       classes_per_feature=n_classes_per_feature, n_input_features=6, n_input_features_condition=4,
                       n_time_steps=n_time_steps, n_channels_per_layer=n_channels_per_layer, logdir=logdir, dense_flag=dense_flag)  #logdir='/Users/stefruinard/Desktop/FastWavenet/'
-        #model.saver.restore(sess, tf.train.latest_checkpoint('/Users/stefruinard/Desktop/small_wavenet/B{}L{}/'.format(model.n_blocks, model.n_layers)))
+        model.saver.restore(sess, tf.train.latest_checkpoint('/Users/stefruinard/Desktop/small_wavenet/B{}L{}/iteration_1277300_loss_0.002831204328685999/'.format(model.n_blocks, model.n_layers)))
         print("------ model created ------")
 
 
@@ -107,7 +107,7 @@ if __name__ == '__main__':
             start_iteration = load_data(directory=logdir+'B{}L{}/'.format(model.n_blocks,model.n_layers), filename='iteration')
 
         #start training
-        for iteration in tqdm.tqdm(range(start_iteration,n_training_steps)):
+        for iteration in tqdm.tqdm(range(start_iteration,n_training_steps+start_iteration)):
             save_data(directory=logdir+'B{}L{}/'.format(model.n_blocks,model.n_layers), filename='iteration',my_list=iteration)
 
             inputs_engine, inputs_condition, targets = create_training_batch(batch_size=batch_size_training, n_time_steps=n_time_steps, directory=directory_training_data, n_layers=n_layers, n_blocks=n_blocks, dense_flag=model.dense_flag) #directory='/Users/stefruinard/Desktop/FastWavenet/training_data/'
